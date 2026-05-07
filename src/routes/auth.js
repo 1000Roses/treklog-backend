@@ -4,12 +4,14 @@ export default async function authRoutes(fastify) {
   fastify.post('/auth/register', async (request, reply) => {
     const { email, password, name, phone } = request.body;
 
+    // Use signUp (works with anon key) instead of admin.createUser
     const { data, error } = await fastify.supabase
-      .auth.admin.createUser({
+      .auth.signUp({
         email,
         password,
-        email_confirm: true,
-        user_metadata: { name, phone }
+        options: {
+          data: { name, phone }
+        }
       });
 
     if (error) {
