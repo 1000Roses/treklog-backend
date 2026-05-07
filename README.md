@@ -6,6 +6,7 @@ Backend API for TrekTrack - trekking & safety platform. Built with Fastify + Sup
 
 - **Auth**: JWT-based authentication via Supabase Auth
 - **Tracklogs**: Import/manage GPX tracks with metadata
+- **Places**: Famous attractions and POIs with tracklog associations
 - **User Profiles**: Profile management + emergency contacts
 - **SOS Alerts**: Emergency alert system for safety
 - **Presence**: Real-time nearby user tracking via WebSocket
@@ -52,8 +53,13 @@ PORT=3000
 This creates:
 - `users` table
 - `tracklogs` table
+- `places` table (attractions/POIs)
 - `sos_alerts` table
 - `user_locations` table
+- `tracklog_imports` table
+- `tracklog_categories` table
+- `tracklog_tags` table
+- `place_tracklogs` junction table
 - Row Level Security (RLS) policies
 - Auto-create user trigger
 
@@ -91,6 +97,22 @@ Server runs at `http://localhost:3000`
 | DELETE | `/api/v1/tracklogs/:id` | Delete tracklog |
 | POST | `/api/v1/tracklogs/:id/share` | Share/unshare tracklog |
 | GET | `/api/v1/tracklogs/public/feed` | Get public tracklogs |
+
+### Places (Attractions/POIs)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/places` | List all places (filter by category) |
+| GET | `/api/v1/places/popular` | Get popular places (featured + high score) |
+| GET | `/api/v1/places/search?q=` | Search places by name |
+| GET | `/api/v1/places/:id` | Get place details |
+| GET | `/api/v1/places/:id/tracklogs` | Get tracklogs for a place |
+| POST | `/api/v1/places` | Create place (admin) |
+| PUT | `/api/v1/places/:id` | Update place |
+| POST | `/api/v1/places/:id/tracklogs` | Associate tracklog with place |
+| DELETE | `/api/v1/places/:id/tracklogs/:tracklogId` | Remove tracklog from place |
+
+**Place categories:** mountain, beach, forest, waterfall, temple, city, etc.
 
 ### SOS Alerts
 
@@ -133,6 +155,16 @@ curl -X POST http://localhost:3000/api/v1/tracklogs \
   -d '{"title":"Morning Trek","started_at":"2024-01-15T06:00:00Z","distance_meters":5000}'
 ```
 
+### Get Popular Places
+```bash
+curl http://localhost:3000/api/v1/places/popular?limit=10&category=mountain
+```
+
+### Get Place Tracklogs
+```bash
+curl http://localhost:3000/api/v1/places/PLACE_ID/tracklogs?limit=20
+```
+
 ### Send SOS Alert
 ```bash
 curl -X POST http://localhost:3000/api/v1/sos \
@@ -144,10 +176,24 @@ curl -X POST http://localhost:3000/api/v1/sos \
 ## Database Schema
 
 See `supabase/schema.sql` for full schema including:
-- Table definitions
-- Indexes for performance
-- Row Level Security (RLS) policies
-- Auto-create user trigger
+
+**Tables:**
+- `users` - User profiles
+- `tracklogs` - GPS track data
+- `places` - Famous attractions/POIs
+- `place_tracklogs` - Junction for tracklog-place associations
+- `sos_alerts` - Emergency alerts
+- `user_locations` - Presence tracking
+- `tracklog_imports` - Import history
+- `tracklog_categories` - Hierarchical categories
+- `tracklog_tags` - Many-to-many tags
+- `tracklog_admin` - Moderation queue
+
+**Views:**
+- `v_public_tracklogs` - Public feed with ratings
+- `v_tracklog_stats` - Per-user aggregated stats
+- `v_nearby_tracklogs` - Map viewport queries
+- `v_places_with_stats` - Places with tracklog count
 
 ## Environment Variables
 

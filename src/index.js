@@ -4,6 +4,7 @@ import authRoutes from './routes/auth.js';
 import tracklogRoutes from './routes/tracklogs.js';
 import sosRoutes from './routes/sos.js';
 import presenceWebSocket from './routes/presence.js';
+import placesRoutes from './routes/places.js';
 
 const app = await buildApp();
 
@@ -19,6 +20,7 @@ app.get('/health', async () => {
 app.register(authRoutes, { prefix: '/api/v1' });
 app.register(tracklogRoutes, { prefix: '/api/v1' });
 app.register(sosRoutes, { prefix: '/api/v1' });
+app.register(placesRoutes, { prefix: '/api/v1' });
 app.register(presenceWebSocket);
 
 // Graceful shutdown

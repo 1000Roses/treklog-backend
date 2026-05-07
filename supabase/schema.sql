@@ -127,6 +127,51 @@ CREATE TABLE IF NOT EXISTS public.tracklog_admin (
 );
 
 -- ============================================
+-- PHASE 3: Places (attractions/POIs)
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.places (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    description TEXT,
+    latitude FLOAT NOT NULL,
+    longitude FLOAT NOT NULL,
+    category TEXT, -- mountain, beach, forest, waterfall, temple, etc.
+    image_url TEXT,
+    popularity_score INT DEFAULT 0,
+    is_featured BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Junction: tracklogs associated with a place
+CREATE TABLE IF NOT EXISTS public.place_tracklogs (
+    place_id UUID NOT NULL REFERENCES public.places(id) ON DELETE CASCADE,
+    tracklog_id UUID NOT NULL REFERENCES public.tracklogs(id) ON DELETE CASCADE,
+    PRIMARY KEY (place_id, tracklog_id)
+);
+
+-- ============================================
+-- Additional Tables for Ratings/Reviews
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.track_ratings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tracklog_id UUID NOT NULL REFERENCES public.tracklogs(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (tracklog_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.track_reviews (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tracklog_id UUID NOT NULL REFERENCES public.tracklogs(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    review TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (tracklog_id, user_id)
+);
+
+-- ============================================
 -- Indexes for performance
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_tracklogs_user_id ON public.tracklogs(user_id);
@@ -152,6 +197,17 @@ CREATE INDEX IF NOT EXISTS idx_tracklog_tag_items_tag ON public.tracklog_tag_ite
 -- Admin indexes
 CREATE INDEX IF NOT EXISTS idx_tracklog_admin_status ON public.tracklog_admin(status);
 CREATE INDEX IF NOT EXISTS idx_tracklog_admin_featured ON public.tracklog_admin(featured) WHERE featured = true;
+
+-- Places indexes
+CREATE INDEX IF NOT EXISTS idx_places_category ON public.places(category);
+CREATE INDEX IF NOT EXISTS idx_places_popularity ON public.places(popularity_score DESC);
+CREATE INDEX IF NOT EXISTS idx_places_featured ON public.places(is_featured) WHERE is_featured = true;
+CREATE INDEX IF NOT EXISTS idx_place_tracklogs_tracklog ON public.place_tracklogs(tracklog_id);
+
+-- Ratings/Reviews indexes
+CREATE INDEX IF NOT EXISTS idx_track_ratings_tracklog_id ON public.track_ratings(tracklog_id);
+CREATE INDEX IF NOT EXISTS idx_track_ratings_user_id ON public.track_ratings(user_id);
+CREATE INDEX IF NOT EXISTS idx_track_reviews_tracklog_id ON public.track_reviews(tracklog_id);
 
 -- ============================================
 -- Client-facing Views (read-only, optimized)
@@ -210,6 +266,23 @@ FROM public.tracklogs t
 JOIN public.users u ON t.user_id = u.id
 WHERE t.is_public = true;
 
+-- v_places_with_stats: Places with tracklog count
+CREATE OR REPLACE VIEW public.v_places_with_stats AS
+SELECT 
+    p.id,
+    p.name,
+    p.description,
+    p.latitude,
+    p.longitude,
+    p.category,
+    p.image_url,
+    p.popularity_score,
+    p.is_featured,
+    COUNT(pt.tracklog_id) AS tracklog_count
+FROM public.places p
+LEFT JOIN public.place_tracklogs pt ON p.id = pt.place_id
+GROUP BY p.id, p.name, p.description, p.latitude, p.longitude, p.category, p.image_url, p.popularity_score, p.is_featured;
+
 -- ============================================
 -- Row Level Security (RLS) - Critical for security
 -- ============================================
@@ -225,6 +298,10 @@ ALTER TABLE public.tracklog_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tracklog_category_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tracklog_tag_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tracklog_admin ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.places ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.place_tracklogs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.track_ratings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.track_reviews ENABLE ROW LEVEL SECURITY;
 
 -- Users: users can read all, update only their own
 CREATE POLICY "Users readable by all authenticated" ON public.users
@@ -294,6 +371,32 @@ CREATE POLICY "Manage tag items" ON public.tracklog_tag_items
 CREATE POLICY "Admin readable by all" ON public.tracklog_admin
     FOR SELECT USING (true);
 
+-- Places: readable by all
+CREATE POLICY "Places readable by all" ON public.places
+    FOR SELECT USING (true);
+
+-- Place tracklogs: readable by all, owner can manage
+CREATE POLICY "Place tracklogs readable by all" ON public.place_tracklogs
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can manage own place tracklogs" ON public.place_tracklogs
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.tracklogs WHERE id = tracklog_id AND user_id = auth.uid())
+    );
+
+-- Ratings/Reviews: readable by all, owner can manage
+CREATE POLICY "Users can read track ratings" ON public.track_ratings
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can manage own ratings" ON public.track_ratings
+    FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can read track reviews" ON public.track_reviews
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can manage own reviews" ON public.track_reviews
+    FOR ALL USING (auth.uid() = user_id);
+
 -- Views are read-only by default, no RLS needed
 
 -- Function to auto-create user record on signup
@@ -319,41 +422,3 @@ CREATE TRIGGER on_auth_user_created
 -- Allow authenticated users to read other users' basic info
 CREATE POLICY "Authenticated users can read other users info" ON public.users
     FOR SELECT USING (auth.role() = 'authenticated');
-
--- ============================================
--- Additional Tables Needed for Views
--- ============================================
-CREATE TABLE IF NOT EXISTS public.track_ratings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tracklog_id UUID NOT NULL REFERENCES public.tracklogs(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (tracklog_id, user_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_track_ratings_tracklog_id ON public.track_ratings(tracklog_id);
-CREATE INDEX IF NOT EXISTS idx_track_ratings_user_id ON public.track_ratings(user_id);
-
-CREATE POLICY "Users can read track ratings" ON public.track_ratings
-    FOR SELECT USING (true);
-
-CREATE POLICY "Users can manage own ratings" ON public.track_ratings
-    FOR ALL USING (auth.uid() = user_id);
-
-CREATE TABLE IF NOT EXISTS public.track_reviews (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tracklog_id UUID NOT NULL REFERENCES public.tracklogs(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    review TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (tracklog_id, user_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_track_reviews_tracklog_id ON public.track_reviews(tracklog_id);
-
-CREATE POLICY "Users can read track reviews" ON public.track_reviews
-    FOR SELECT USING (true);
-
-CREATE POLICY "Users can manage own reviews" ON public.track_reviews
-    FOR ALL USING (auth.uid() = user_id);
