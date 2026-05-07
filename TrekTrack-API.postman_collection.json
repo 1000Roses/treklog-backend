@@ -1,0 +1,612 @@
+{
+  "info": {
+    "name": "TrekTrack API",
+    "description": "TrekTrack Backend API - Trekking trackmap application",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "AUTH",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"Test User\",\n  \"phone\": \"+84123456789\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.collectionVariables.set('token', jsonData.token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login and get JWT token"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Get current user profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Me",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"+84987654321\",\n  \"emergency_contact_name\": \"Jane Doe\",\n  \"emergency_contact_phone\": \"+84123456789\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Update user profile"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "TRACKLOGS",
+      "item": [
+        {
+          "name": "List My Tracklogs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tracklogs",
+              "host": ["{{baseUrl}}"],
+              "path": ["tracklogs"]
+            },
+            "description": "Get all tracklogs for current user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tracklog by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tracklogs/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tracklogs", ":id"]
+            },
+            "description": "Get single tracklog details"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Tracklog",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Morning Trek to Fansipan\",\n  \"description\": \"Beautiful sunrise trek\",\n  \"started_at\": \"2024-01-15T06:00:00Z\",\n  \"ended_at\": \"2024-01-15T12:00:00Z\",\n  \"distance_meters\": 12500,\n  \"elevation_gain\": 850,\n  \"elevation_loss\": 820,\n  \"gpx_data\": \"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?><gpx>...</gpx>\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tracklogs",
+              "host": ["{{baseUrl}}"],
+              "path": ["tracklogs"]
+            },
+            "description": "Create a new tracklog"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Tracklog",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Track Title\",\n  \"is_public\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tracklogs/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tracklogs", ":id"]
+            },
+            "description": "Update tracklog"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Tracklog",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tracklogs/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tracklogs", ":id"]
+            },
+            "description": "Delete a tracklog"
+          },
+          "response": []
+        },
+        {
+          "name": "Share Tracklog",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_public\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tracklogs/:id/share",
+              "host": ["{{baseUrl}}"],
+              "path": ["tracklogs", ":id", "share"]
+            },
+            "description": "Make tracklog public or private"
+          },
+          "response": []
+        },
+        {
+          "name": "Public Feed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tracklogs/public/feed?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["tracklogs", "public", "feed"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get public tracklogs feed"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "SOS",
+      "item": [
+        {
+          "name": "Send SOS Alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Need help! Injured near summit\",\n  \"location_lat\": 22.3005,\n  \"location_lng\": 103.7866,\n  \"severity\": \"critical\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sos",
+              "host": ["{{baseUrl}}"],
+              "path": ["sos"]
+            },
+            "description": "Send SOS emergency alert"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Active SOS",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sos/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["sos", "active"]
+            },
+            "description": "Get user's active SOS alerts"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Active SOS",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sos/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["sos", "all"]
+            },
+            "description": "Get all active SOS alerts (for authorities)"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve SOS",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolution_notes\": \"Rescued successfully, user safe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sos/:id/resolve",
+              "host": ["{{baseUrl}}"],
+              "path": ["sos", ":id", "resolve"]
+            },
+            "description": "Resolve/cancel SOS alert"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PRESENCE",
+      "item": [
+        {
+          "name": "Get Nearby Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/presence/nearby?lat=10.8231&lng=106.6297&radius_km=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["presence", "nearby"],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "10.8231"
+                },
+                {
+                  "key": "lng",
+                  "value": "106.6297"
+                },
+                {
+                  "key": "radius_km",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get nearby users within radius"
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 10.8231,\n  \"longitude\": 106.6297,\n  \"accuracy\": 5.0,\n  \"heading\": 180.0,\n  \"speed\": 1.5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/presence/location",
+              "host": ["{{baseUrl}}"],
+              "path": ["presence", "location"]
+            },
+            "description": "Update current user location"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PLACES",
+      "item": [
+        {
+          "name": "Get Popular Places",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/places/popular?limit=10&category=mountain",
+              "host": ["{{baseUrl}}"],
+              "path": ["places", "popular"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "category",
+                  "value": "mountain"
+                }
+              ]
+            },
+            "description": "Get popular/famous places for home screen"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Places",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/places?category=island&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["places"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "island"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get all places with optional filter"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Places",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/places/search?q=fansi",
+              "host": ["{{baseUrl}}"],
+              "path": ["places", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "fansi"
+                }
+              ]
+            },
+            "description": "Search places by name"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Place by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/places/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["places", ":id"]
+            },
+            "description": "Get single place details"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tracklogs for Place",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/places/:id/tracklogs?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["places", ":id", "tracklogs"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get tracklogs associated with a place"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Place (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Mountain Peak\",\n  \"description\": \"A beautiful new trekking destination\",\n  \"latitude\": 15.1234,\n  \"longitude\": 108.5678,\n  \"category\": \"mountain\",\n  \"image_url\": \"https://example.com/image.jpg\",\n  \"popularity_score\": 500,\n  \"is_featured\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/places",
+              "host": ["{{baseUrl}}"],
+              "path": ["places"]
+            },
+            "description": "Create a new place (admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Place",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Place Name\",\n  \"popularity_score\": 750\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/places/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["places", ":id"]
+            },
+            "description": "Update place details"
+          },
+          "response": []
+        },
+        {
+          "name": "Link Tracklog to Place",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tracklog_id\": \"uuid-of-tracklog\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/places/:id/tracklogs",
+              "host": ["{{baseUrl}}"],
+              "path": ["places", ":id", "tracklogs"]
+            },
+            "description": "Associate a tracklog with a place"
+          },
+          "response": []
+        },
+        {
+          "name": "Unlink Tracklog from Place",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/places/:id/tracklogs/:tracklogId",
+              "host": ["{{baseUrl}}"],
+              "path": ["places", ":id", "tracklogs", ":tracklogId"]
+            },
+            "description": "Remove tracklog association from place"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "HEALTH",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/health",
+              "host": ["localhost:3000"],
+              "path": ["health"]
+            },
+            "description": "API health check"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
