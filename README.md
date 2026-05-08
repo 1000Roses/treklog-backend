@@ -42,6 +42,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-anon-key
 JWT_SECRET=your-secret-key
 PORT=3000
+FRONTEND_URL=http://localhost:3000
 ```
 
 ### 3. Setup Supabase Database
@@ -83,8 +84,23 @@ Server runs at `http://localhost:3000`
 |--------|----------|-------------|
 | POST | `/api/v1/auth/register` | Register new user |
 | POST | `/api/v1/auth/login` | Login (returns JWT) |
+| POST | `/api/v1/auth/refresh` | Refresh JWT token |
+| POST | `/api/v1/auth/resend-confirmation` | Resend confirmation email |
+| POST | `/api/v1/auth/verify` | Verify token manually |
+| GET | `/api/v1/auth/confirm/status` | Check email confirmation status |
+| GET | `/api/v1/auth/callback` | Handle Supabase email confirmation redirect |
 | GET | `/api/v1/auth/me` | Get current user profile |
 | PUT | `/api/v1/auth/me` | Update profile |
+
+### Auth Flow (Email Confirmation)
+
+1. **Register**: `POST /auth/register` → Supabase sends confirmation email
+2. **User clicks link**: Supabase redirects to `/auth/callback?token=xxx&email=xxx&type=signup`
+3. **Backend handles callback**: 
+   - Verifies token with Supabase
+   - Creates user profile in `public.users` if not exists
+   - Returns JWT redirect to frontend
+4. **Frontend receives token** and logs user in
 
 ### Tracklogs
 
@@ -147,6 +163,18 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
   -d '{"email":"user@example.com","password":"password123"}'
 ```
 
+### Check Confirmation Status
+```bash
+curl http://localhost:3000/api/v1/auth/confirm/status?user_id=USER_UUID
+```
+
+### Verify Token
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/verify \
+  -H "Content-Type: application/json" \
+  -d '{"token":"YOUR_SUPABASE_TOKEN"}'
+```
+
 ### Create Tracklog (with JWT)
 ```bash
 curl -X POST http://localhost:3000/api/v1/tracklogs \
@@ -202,6 +230,7 @@ See `supabase/schema.sql` for full schema including:
 | `SUPABASE_URL` | Supabase project URL | ✅ |
 | `SUPABASE_KEY` | Supabase anon/public key | ✅ |
 | `JWT_SECRET` | Secret for JWT signing | ✅ |
+| `FRONTEND_URL` | Frontend URL for redirects | ✅ |
 | `PORT` | Server port (default: 3000) | ❌ |
 | `HOST` | Server host (default: 0.0.0.0) | ❌ |
 
